@@ -237,27 +237,27 @@
             for (var i = 0; i < slider.pagingCount; i++) {
               slide = slider.slides.eq(i);
 
-              if ( undefined === slide.attr( 'data-thumb-alt' ) ) { 
-                slide.attr( 'data-thumb-alt', '' ); 
+              if ( undefined === slide.attr( 'data-thumb-alt' ) ) {
+                slide.attr( 'data-thumb-alt', '' );
               }
-              
+
               item = $( '<a></a>' ).attr( 'href', '#' ).text( j );
               if ( slider.vars.controlNav === "thumbnails" ) {
                 item = $( '<img/>' ).attr( 'src', slide.attr( 'data-thumb' ) );
               }
-              
+
               if ( '' !== slide.attr( 'data-thumb-alt' ) ) {
                 item.attr( 'alt', slide.attr( 'data-thumb-alt' ) );
               }
 
               if ( 'thumbnails' === slider.vars.controlNav && true === slider.vars.thumbCaptions ) {
                 var captn = slide.attr( 'data-thumbcaption' );
-                if ( '' !== captn && undefined !== captn ) { 
+                if ( '' !== captn && undefined !== captn ) {
                   var caption = $('<span></span>' ).addClass( namespace + 'caption' ).text( captn );
                   item.append( caption );
                 }
               }
-              
+
               var liElement = $( '<li>' );
               item.appendTo( liElement );
               liElement.append( '</li>' );
@@ -970,7 +970,11 @@
             slider.setProps(sliderOffset * slider.h, "init");
           }, (type === "init") ? 100 : 0);
         } else {
-          slider.container.width((slider.count + slider.cloneCount) * 200 + "%");
+          if(vertical) {
+            slider.container.height((slider.count + slider.cloneCount) * 200 + "%").css("position", "absolute").width("100%");
+          } else {
+            slider.container.width((slider.count + slider.cloneCount) * 200 + "%");
+          }
           slider.setProps(sliderOffset * slider.computedW, "init");
           setTimeout(function(){
             slider.doMath();
@@ -980,10 +984,14 @@
             } else {
               slider.newSlides.css({"width": slider.computedW, "marginRight" : slider.computedM, "float": "left", "display": "block"});
             }
-              
+
            }
             else{
-              slider.newSlides.css({"width": slider.computedW, "marginRight" : slider.computedM, "float": "left", "display": "block"});
+              if(vertical) {
+                slider.newSlides.css({"height": slider.computedW, "marginBottom" : slider.computedM, "display": "block"});
+              } else {
+                slider.newSlides.css({"width": slider.computedW, "marginRight" : slider.computedM, "float": "left", "display": "block"});
+              }
             }
             // SMOOTH HEIGHT:
             if (slider.vars.smoothHeight) { methods.smoothHeight(); }
@@ -1025,13 +1033,35 @@
           minItems = slider.vars.minItems,
           maxItems = slider.vars.maxItems;
 
-      slider.w = (slider.viewport===undefined) ? slider.width() : slider.viewport.width();
-      if (slider.isFirefox) { slider.w = slider.width(); }
-      slider.h = slide.height();
-      slider.boxPadding = slide.outerWidth() - slide.width();
+      if(vertical) {
+        slider.h = (slider.viewport===undefined) ? slider.height() : slider.viewport.height();
+        if (slider.isFirefox) { slider.h = slider.height(); }
+        slider.w = slide.width();
+        slider.boxPadding = slide.outerHeight() - slide.height();
+      } else {
+        slider.w = (slider.viewport===undefined) ? slider.width() : slider.viewport.width();
+        if (slider.isFirefox) { slider.w = slider.width(); }
+        slider.h = slide.height();
+        slider.boxPadding = slide.outerWidth() - slide.width();
+      }
 
       // CAROUSEL:
-      if (carousel) {
+      if (carousel && vertical) {
+        slider.itemT = slider.vars.itemWidth + slideMargin;
+        slider.itemM = slideMargin;
+        slider.minW = (minItems) ? minItems * slider.itemT : slider.h;
+        slider.maxW = (maxItems) ? (maxItems * slider.itemT) - slideMargin : slider.h;
+        slider.itemW = (slider.minW > slider.h) ? (slider.h - (slideMargin * (minItems - 1)))/minItems :
+                       (slider.maxW < slider.h) ? (slider.h - (slideMargin * (maxItems - 1)))/maxItems :
+                       (slider.vars.itemWidth > slider.h) ? slider.h : slider.vars.itemWidth;
+
+        slider.visible = Math.floor(slider.h/(slider.itemW));
+        slider.move = (slider.vars.move > 0 && slider.vars.move < slider.visible ) ? slider.vars.move : slider.visible;
+        slider.pagingCount = Math.ceil(((slider.count - slider.visible)/slider.move) + 1);
+        slider.last =  slider.pagingCount - 1;
+        slider.limit = (slider.pagingCount === 1) ? 0 :
+                       (slider.vars.itemWidth > slider.h) ? (slider.itemW * (slider.count - 1)) + (slideMargin * (slider.count - 1)) : ((slider.itemW + slideMargin) * slider.count) - slider.h - slideMargin;
+      } else if (carousel) {
         slider.itemT = slider.vars.itemWidth + slideMargin;
         slider.itemM = slideMargin;
         slider.minW = (minItems) ? minItems * slider.itemT : slider.w;
